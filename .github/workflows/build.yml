@@ -1,0 +1,44 @@
+name: Build app
+
+on:
+  pull_request:
+    branches:
+      - dev
+  push:
+    branches:
+      - master
+
+jobs:
+  build-app:
+    runs-on: macos-latest
+    if: github.event.repository.owner.id == github.event.sender.id
+
+    steps:
+      - uses: actions/checkout@main
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 16
+          registry-url: https://registry.npmjs.org/
+
+      - name: Build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm install
+          npm i dmg-license
+          npm run build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build_${{ github.sha }}
+          path: |
+            build/android/*.apk
+
+      - name: Draft release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          prerelease: false
+          files: |
+            build/android/*.apk
